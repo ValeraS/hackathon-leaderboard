@@ -35,17 +35,14 @@ html(lang='en')
             },
             lighthousekeys: [ 'seo', 'best-practices', 'accessibility', 'pwa', 'performance'],
             teamsInterval: '',
-            sortKey: 'lighthouse',
+            sortKey: '',
             disabled: false
           }
         },
         mounted: function() {
           var self = this;
-          self.log();
-          if (self.teams && self.teams !== '' && self.teams !== []) {
-            self.getTeams();
-            self.startTeamsPolling();
-          }
+          self.getTeams();
+          self.startTeamsPolling();
         },
         beforeDestroy() {
           var self = this;
@@ -80,18 +77,24 @@ html(lang='en')
             axios.get('/api/teams')
             .then((res) => {
               self.teams = res.data;
-              self.sortBy(self.sortKey, !self.ascending);
+              self.sortBy();
             })
           },
-          sortBy(key, ascending) {
+          sortBy(key) {
             var self = this;
-            self.ascending = !ascending;
-            self.sortKey = key;
+            if (typeof key !== 'undefined') {
+              if (key === self.sortKey) {
+                self.ascending = !self.ascending;
+              } else {
+                self.ascending = true;
+                self.sortKey = key;
+              }
+            }
             self.teams.sort(function(a, b){
               // a is team
 
               var itemA, itemB;
-              switch(key) {
+              switch(self.sortKey) {
                 case 'buildStatus':
                   itemA = self.buildStatuses.indexOf(a.buildStatus);
                   itemB = self.buildStatuses.indexOf(b.buildStatus);
@@ -122,7 +125,7 @@ html(lang='en')
                   return 0;
               }
 
-              switch(ascending) {
+              switch(self.ascending) {
                 case true:
                   if (itemA < itemB) {
                     return -1;
@@ -183,15 +186,9 @@ html(lang='en')
               isOnlineHackathon: teamIsOnline
             }
             return axios.post(axiosurl, team).then(function(response) {
-              var status = response.status;
-              if (parseInt(status, 10) === 200) {
-                self.createFlash('success', 'Your team has been '+msg+'ed!<br><br>');
-                if (msg === 'creat') {
-                  setTimeout(function() {window.location.href = '/team';}, 1000 * 60 * 3) // three seconds
-                }
-
-              } else {
-                return self.createFlash('warning', 'Something went wrong '+msg+'ing your team')
+              self.createFlash('success', 'Your team has been '+msg+'ed!<br><br>');
+              if (msg === 'creat') {
+                setTimeout(function() {window.location.href = '/team';}, 1000 * 60 * 3) // three seconds
               }
             })
             .catch(function(){
